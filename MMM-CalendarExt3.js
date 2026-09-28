@@ -12,6 +12,32 @@ consoe.log(HTMLElement.prototype.hasOwnProperty("popover")) // true
 if (!popoverSupported) console.info("This browser doesn't support popover yet. Update your system.")
 const animationSupported = (typeof window !== "undefined" && window?.mmVersion) ? +(window.mmVersion.split(".").join("")) >= 2250 : false
 
+function lunarAgeInDays(d) {
+  const knownNewMoon = new Date(Date.UTC(2000, 0, 6, 18, 14, 0))
+  const cycle = 29.530588853
+  const cycleMs = cycle * 24 * 60 * 60 * 1000
+  const diffMs = d.getTime() - knownNewMoon.getTime()
+  let cyclePositionMs = diffMs % cycleMs
+  if (cyclePositionMs < 0) {
+    cyclePositionMs += cycleMs // Handle dates prior to known new moon
+  }
+  return cyclePositionMs / (24 * 60 * 60 * 1000)
+}
+
+function isThisFullMoon(d) {
+  const cycle = 29.530588853
+  const perfectFullMoonDay = cycle / 2
+  const threshold = 0.5
+  return Math.abs(lunarAgeInDays(d) - perfectFullMoonDay) <= threshold
+}
+
+function isThisNewMoon(d) {
+  const cycle = 29.530588853
+  const age = lunarAgeInDays(d)
+  const threshold = 0.5
+  return age <= threshold || (cycle - age) <= threshold
+}
+
 Module.register("MMM-CalendarExt3", {
   requiresVersion: "2.36.0",
   defaults: {
@@ -516,6 +542,8 @@ Module.register("MMM-CalendarExt3", {
       if (isFutureDay(tm)) cell.classList.add("future")
       if (isThisMonth(tm)) cell.classList.add("thisMonth")
       if (isThisYear(tm)) cell.classList.add("thisYear")
+      if (isThisFullMoon(tm)) cell.classList.add("fullMoon")
+      if (isThisNewMoon(tm)) cell.classList.add("newMoon")
       cell.classList.add(
         `year_${tm.getFullYear()}`,
         `month_${tm.getMonth() + 1}`,
